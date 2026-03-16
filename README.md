@@ -7,7 +7,7 @@ The app is developed in flutter, as per the researchers' working knowledge on ap
 
 ## Prerequisites
 - Flutter SDK (stable channel) — https://flutter.dev/docs/get-started/install
-- Java 17 (install via SDKMAN: `sdk install java 17.0.10-tem`)
+- Java 17 (install via SDKMAN: `sdk install java 17.0.10-tem` or in `Oracle website`)
 - Android Studio or VS Code with Flutter extension
 - Android device with USB debugging ON, or an emulator
 
@@ -19,10 +19,12 @@ Use either of the options below:
 
 
 ### 2. Install dependencies
-flutter pub get
+    
+    flutter pub get
 
 ### 3. Run on connected Android device or emulator
-flutter run
+
+    flutter run
 
 # Project Structure
 ```
