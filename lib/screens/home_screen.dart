@@ -71,19 +71,25 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Pi Status Badge...
-                    ConnectionStatusBadge(
-                      label: 'Raspberry Pi 4',
-                      connected: conn.isConnected,
-                      piStatus: conn.piStatus,
+                    // ✅ CENTERED PI STATUS
+                    Center(
+                      child: ConnectionStatusBadge(
+                        label: 'Raspberry Pi 4',
+                        connected: conn.isConnected,
+                        piStatus: conn.piStatus,
+                      ),
                     ),
 
                     if (conn.isConnected && conn.piAddress.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Text(
-                        'IP: ${conn.piAddress}',
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.black45),
+
+                      // ✅ ONLY CHANGE: CENTERED IP
+                      Center(
+                        child: Text(
+                          'IP: ${conn.piAddress}',
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.black45),
+                        ),
                       ),
                     ],
 
@@ -131,15 +137,18 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Filter Tabs (placeholder - to be changed with actual logic)...
-            Row(
-              children: [
-                _FilterChip(label: 'View All', selected: true),
-                const SizedBox(width: 8),
-                _FilterChip(label: 'Normal', selected: false),
-                const SizedBox(width: 8),
-                _FilterChip(label: 'Anomaly', selected: false),
-              ],
+            // ✅ CENTERED FILTER CHIPS
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _FilterChip(label: 'View All', selected: true),
+                  const SizedBox(width: 8),
+                  _FilterChip(label: 'Normal', selected: false),
+                  const SizedBox(width: 8),
+                  _FilterChip(label: 'Anomaly', selected: false),
+                ],
+              ),
             ),
 
             const SizedBox(height: 20),
