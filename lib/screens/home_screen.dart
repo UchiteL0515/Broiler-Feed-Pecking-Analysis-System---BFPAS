@@ -63,70 +63,32 @@ class HomeScreen extends StatelessWidget{
                     ),
                     const SizedBox(height: 16),
 
-                    // App Status Badge...
-                    ConnectionStatusBadge(
-                      label: 'App',
-                      connected: conn.appReady,
-                    ),
-                    const SizedBox(height: 10),
-
                     // Pi Status Badge...
                     ConnectionStatusBadge(
                       label: 'Raspberry Pi 4',
                       connected: conn.isConnected,
                       piStatus: conn.piStatus,
                     ),
-
-                    if(conn.isConnected && conn.piAddress.isNotEmpty)...[
+                    
+                    // Status message shown while waiting/retrying
+                    if(conn.errorMessage.isNotEmpty && !conn.isConnected)...[
                       const SizedBox(height: 8),
-                      Text(
-                        'IP: ${conn.piAddress}',
-                        style: const TextStyle(
-                          fontSize: 12, color: Colors.black45
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 20),
-
-                    // Connect / Disconnect Button...
-                    SizedBox(
-                      width: double.infinity,
-                      child: conn.piStatus == ConnectionStatus.connecting
-                        ? const Center(
-                          child: CircularProgressIndicator(),
-                          )
-                        : conn.isConnected
-                          ? OutlinedButton.icon(
-                            onPressed: conn.disconnect,
-                            icon: const Icon(Icons.wifi_off),
-                            label: const Text('Disconnect from Pi'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.red,
-                              side: const BorderSide(color: Colors.red),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: 
-                                  BorderRadius.circular(10)
-                              ),
-                            ),
-                          )
-                          : ElevatedButton.icon(
-                            onPressed: () => conn.connectToPi(),
-                            icon: const Icon(Icons.wifi_find),
-                            label: const Text('Connect to Pi'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2E7D32),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: 
-                                  BorderRadius.circular(10),
-                              ),
-                              padding:  const EdgeInsets.symmetric(
-                                vertical: 14
-                              ),
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline,
+                            size: 13, color: Colors.black38),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              conn.errorMessage,
+                              style: const TextStyle(
+                                fontSize: 12, color: Colors.black38),
                             ),
                           ),
-                    ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
