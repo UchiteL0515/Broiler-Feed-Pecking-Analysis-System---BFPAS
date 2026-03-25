@@ -36,12 +36,9 @@ import 'database/database_seeder.dart'
 ```
 The file should already be inside the repo when cloned
 
-Then insert this block inside main() just before runApp():
-```
-if(kDebugMode) await DatabaseSeeder.seed();
-```
+Demo data should start to seed inside database, wait until finished then a print from debug screen will show that seeding is done.
 
-Demo data should start to seed inside database, wait until finished then the data should be updated on the homescreen.
+### NOTE: Demo data will only run on debug/development stage, will not run during app releasing
 
 # Project Structure
 ```
@@ -51,8 +48,13 @@ lib/
 │   └── home_screen.dart             # Main homepage (status + chicken grid)
 ├── services/
 │   └── connection_service.dart      # Pi connection state (Wi-Fi)
-└── widgets/
-    └── connection_status_badge.dart # Reusable connected/disconnected badge
+├── widgets/
+│   └── connection_status_badge.dart # Reusable connected/disconnected badge
+├── models/
+│   └── chicken_record.dart          # Database model mapping for SQLite records
+└── database/
+    └── database_helper.dart         # Helper functions for Database Management
+    └── database_seeder.dart         # Seed Demo Data
 ```
 
 # Current Skeleton Features
@@ -62,9 +64,9 @@ lib/
 - ✅ Stat cards: Total / Normal / Anomaly placeholders
 - ✅ Filter chips: View All / Normal / Anomaly
 - ✅ Empty state changes based on Pi connection
+- ✅ Wi-Fi socket / HTTP polling from Pi after successful handshake
+- ✅ SQLite schema + `sqflite` setup
 
 # Next Steps
-- [ ] Wi-Fi socket / HTTP polling from Pi after successful handshake
-- [ ] SQLite schema + `sqflite` setup
 - [ ] Chicken card grid with ID + Normal/Anomaly badge
 - [ ] Chicken detail view with live feed + behavioral data
