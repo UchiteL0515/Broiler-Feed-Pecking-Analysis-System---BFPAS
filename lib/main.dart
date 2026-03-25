@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'services/connection_service.dart';
 import 'screens/home_screen.dart';
+import 'database/database_seeder.dart';
 
-void main(){
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();  
+  if(kDebugMode) await DatabaseSeeder.seed();
   runApp(
     MultiProvider(
       providers: [
