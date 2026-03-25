@@ -7,7 +7,7 @@ void main(){
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ConnectionService()),
+        ChangeNotifierProvider(create: (_) => ConnectionService()..init()),
       ],
       child: const BFPASApp(),
     ),

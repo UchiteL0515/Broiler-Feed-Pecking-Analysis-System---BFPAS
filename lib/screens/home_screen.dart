@@ -71,6 +71,13 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'System Status',
+                      style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    
                     // ✅ CENTERED PI STATUS
                     Center(
                       child: ConnectionStatusBadge(
@@ -92,44 +99,25 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     ],
-
+                    
+                    // Status message shown while waiting/retrying
+                    if(conn.errorMessage.isNotEmpty && !conn.isConnected)...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline,
+                            size: 13, color: Colors.black38),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              conn.errorMessage,
+                              style: const TextStyle(
+                                fontSize: 12, color: Colors.black38),
+                            ),
+                          ),
+                        ],
+                        
                     const SizedBox(height: 20),
-
-                    // Connect / Disconnect Button...
-                    SizedBox(
-                      width: double.infinity,
-                      child: conn.piStatus == ConnectionStatus.connecting
-                          ? const Center(
-                              child: CircularProgressIndicator(),
-                            )
-                          : conn.isConnected
-                              ? OutlinedButton.icon(
-                                  onPressed: conn.disconnect,
-                                  icon: const Icon(Icons.wifi_off),
-                                  label: const Text('Disconnect from Pi'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                    side: const BorderSide(color: Colors.red),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(10)),
-                                  ),
-                                )
-                              : ElevatedButton.icon(
-                                  onPressed: () => conn.connectToPi(),
-                                  icon: const Icon(Icons.wifi_find),
-                                  label: const Text('Connect to Pi'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF2E7D32),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 14),
-                                  ),
-                                ),
-                    ),
                   ],
                 ),
               ),
