@@ -26,6 +26,23 @@ Use either of the options below:
 
     flutter run
 
+# Seed Demo
+The app has demo data set up for SQLite database. These demo chicken records are used for testing the app functionality. 
+
+### Steps to seed demo data
+First, make sure that main.dart has this import:
+```
+import 'database/database_seeder.dart'
+```
+The file should already be inside the repo when cloned
+
+Then insert this block inside main() just before runApp():
+```
+if(kDebugMode) await DatabaseSeeder.seed();
+```
+
+Demo data should start to seed inside database, wait until finished then the data should be updated on the homescreen.
+
 # Project Structure
 ```
 lib/
