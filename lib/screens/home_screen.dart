@@ -87,13 +87,13 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
 
-                    if (conn.isConnected && conn.piAddress.isNotEmpty) ...[
+                    if (conn.isConnected && conn.errorMessage.isEmpty) ...[
                       const SizedBox(height: 8),
 
                       // ✅ ONLY CHANGE: CENTERED IP
                       Center(
                         child: Text(
-                          'IP: ${conn.piAddress}',
+                          'IP: ${ConnectionService.piAddress}',
                           style: const TextStyle(
                               fontSize: 12, color: Colors.black45),
                         ),
@@ -116,7 +116,8 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                         ],
-                        
+                      ),
+                    ],    
                     const SizedBox(height: 20),
                   ],
                 ),
