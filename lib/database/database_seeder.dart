@@ -78,7 +78,7 @@ class DatabaseSeeder{
 
     debugPrint('[Seeder] Inserted ${records.length} demo records '
       '(${records.where((r) => r.status == 'Normal').length} normal, '
-      '${records.where((r) => r.status == 'Anomaly').length}).');
+      '${records.where((r) => r.status == 'Anomaly').length}) anomaly.');
   }
 
   // Force re-seed by wiping the table first

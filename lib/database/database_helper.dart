@@ -6,7 +6,7 @@ import '../models/chicken_record.dart';
 
 class DatabaseHelper{
   static const _dbName = 'badmsystem_chicken.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2; // bump whenever the schema changes
   static const table = 'chicken_behavior';
 
   // Singleton instance
@@ -28,22 +28,31 @@ class DatabaseHelper{
       path,
       version: _dbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async{
     await db.execute('''
       CREATE TABLE $table(
-        id    INTEGER PRIMARY KEY AUTOINCREMENT,
-        chicken_id    INTEGER NOT NULL,
-        status    TEXT NOT NULL CHECK(status IN ('Normal', 'Anomaly')),
-        feed_duration   INTEGER NOT NULL,
-        peck_frequency    INTEGER NOT NULL,
+        id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+        chicken_id                  INTEGER NOT NULL,
+        status                      TEXT NOT NULL CHECK(status IN ('Normal', 'Anomaly')),
+        feed_duration               INTEGER NOT NULL,
+        peck_frequency              INTEGER NOT NULL,
         head_movement_variability   INTEGER NOT NULL,
-        trajectory_pattern    INTEGER NOT NULL,
-        timestamp   TEXT NOT NULL
+        pause_interval              INTEGER NOT NULL,        
+        trajectory_pattern          INTEGER NOT NULL,
+        timestamp                   TEXT NOT NULL
       )
     ''');
+  }
+
+  // DURING DEVELOPMENT: drop and recreate so the schema is always fresh...
+  // IN PRODUCTION: make a proper handle for schema changes -- ALTER TABLE migrations instead
+  Future<void>  _onUpgrade(Database db, int oldVersion, int newVersion) async{
+    await db.execute('DROP TABLE IF EXISTS $table');
+    await _onCreate(db, newVersion);
   }
 
   // -- CRUD --
