@@ -66,7 +66,7 @@ lib/
 - ✅ Empty state changes based on Pi connection
 - ✅ Wi-Fi socket / HTTP polling from Pi after successful handshake
 - ✅ SQLite schema + `sqflite` setup
+- ✅ Chicken card grid with ID + Normal/Anomaly badge
 
 # Next Steps
-- [ ] Chicken card grid with ID + Normal/Anomaly badge
 - [ ] Chicken detail view with live feed + behavioral data
