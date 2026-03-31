@@ -50,6 +50,7 @@ lib/
 │   └── connection_service.dart      # Pi connection state (Wi-Fi)
 ├── widgets/
 │   └── connection_status_badge.dart # Reusable connected/disconnected badge
+│   └── mjpeg_viewer.dart            # Used for the live feed stream
 ├── models/
 │   └── chicken_record.dart          # Database model mapping for SQLite records
 └── database/
@@ -57,7 +58,7 @@ lib/
     └── database_seeder.dart         # Seed Demo Data
 ```
 
-# Current Skeleton Features
+# Current Application Features
 - ✅ App "connected" status always shown
 - ✅ Raspberry Pi 4 connection status (disconnected / connecting / connected)
 - ✅ "Connect to Pi" button with simulated 2-second Wi-Fi handshake
@@ -67,6 +68,7 @@ lib/
 - ✅ Wi-Fi socket / HTTP polling from Pi after successful handshake
 - ✅ SQLite schema + `sqflite` setup
 - ✅ Chicken card grid with ID + Normal/Anomaly badge
+- ✅ Chicken detail view with live feed + behavioral data
 
 # Next Steps
-- [ ] Chicken detail view with live feed + behavioral data
+- [ ] YOLOv8 + DeepSORT + SVM -- training and deployment
