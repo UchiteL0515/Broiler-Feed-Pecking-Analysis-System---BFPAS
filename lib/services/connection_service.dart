@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 enum ConnectionStatus { disconnected, connecting, connected, failed }
 
 class ConnectionService extends ChangeNotifier {
-  static const String piAddress = '192.168.254.100'; // Pi IP for connection
+  static const String piAddress = '192.168.1.23'; // Pi IP for connection
   static const int _port = 5000;
   static const int _timeout = 5;
   static const int _heartbeat = 10;
