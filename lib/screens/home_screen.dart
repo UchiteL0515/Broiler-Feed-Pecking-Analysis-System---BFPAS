@@ -132,6 +132,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   }
 
                   setState(() {
+                    newIp.isNotEmpty == true 
+                      ? ConnectionService.piAddress = newIp 
+                      : ConnectionService.piAddress = _currentIp;
+                    
                     _currentIp = newIp;
                   });
 
