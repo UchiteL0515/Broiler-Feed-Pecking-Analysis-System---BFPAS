@@ -1,20 +1,88 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import '../models/chicken_record.dart';
 import '../services/connection_service.dart';
 import '../widgets/mjpeg_viewer.dart';
 
-class ChickenDetailScreen extends StatelessWidget{
+class ChickenDetailScreen extends StatefulWidget{
   final ChickenRecord record;
 
   const ChickenDetailScreen({super.key, required this.record});
 
+  @override
+  State<ChickenDetailScreen> createState() => _ChickenDetailScreenState();
+}
+
+class _ChickenDetailScreenState extends State<ChickenDetailScreen>{
+  bool _isStarting = true;
+  bool _liveReady = false;
+  String? _error;
+   
   // Builds the stream URL using the same hardcoded Pi address from
   // ConnectionService so there is one single source of truth for the IP.
-  String get _streamUrl =>
-      'http://${ConnectionService.piAddress}:5000/stream';
+  String get _baseUrl => 'http://${ConnectionService.piAddress}:5000';
+  String get _streamUrl => '$_baseUrl/stream';
+
+  @override
+  void initState(){
+    super.initState();
+    _startLiveFeed();
+  }
+
+  Future<void> _startLiveFeed() async{
+    try{
+      final response = await http.post(
+        Uri.parse('$_baseUrl/live/start'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'chicken_id': widget.record.chickenId,
+        }),
+      );
+
+      if(response.statusCode == 200){
+        if(!mounted) return;
+        setState((){
+          _isStarting = false;
+          _liveReady = true;
+          _error = null;
+        });
+      } else{
+        if(!mounted) return;
+        setState((){
+          _isStarting = false;
+          _liveReady = false;
+          _error = 'Failed to start live inference';
+        });
+      }
+    } catch(e){
+      if(!mounted) return;
+      setState((){
+        _isStarting = false;
+        _liveReady = false;
+        _error = 'Connection error: $e';
+      });
+    }
+  }
+
+  Future<void> _stopLiveFeed() async{
+    try{
+      await http.post(Uri.parse('$_baseUrl/live/stop'));
+    } catch(_){
+      //ignore on dispose
+    }
+  }
+
+  @override
+  void dispose(){
+    _stopLiveFeed();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context){
+    final record = widget.record;
     final isAnomaly = record.status == 'Anomaly';
     final statusColor = isAnomaly ? Colors.red : const Color(0xFF2E7D32);
 
@@ -34,7 +102,7 @@ class ChickenDetailScreen extends StatelessWidget{
             width: double.infinity,
             height: MediaQuery.of(context).size.height * 0.38,
             color: Colors.black,
-            child: MjpegViewer(streamUrl: _streamUrl),
+            child: _buildLiveSection(),
           ),
 
           // BOTTOM HALF: Behavioral Data
@@ -133,6 +201,38 @@ class ChickenDetailScreen extends StatelessWidget{
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLiveSection(){
+    if(_isStarting){
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    if(_error != null){
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            _error!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    if(_liveReady){
+      return MjpegViewer(streamUrl: _streamUrl);
+    }
+
+    return const Center(
+      child: Text(
+        'Live feed unavailable',
+        style: TextStyle(color: Colors.white),
       ),
     );
   }
