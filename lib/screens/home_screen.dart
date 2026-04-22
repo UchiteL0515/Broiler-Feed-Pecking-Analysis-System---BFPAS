@@ -41,45 +41,96 @@ class _HomeScreenState extends State<HomeScreen> {
     await fresh;
   }
 
+  void _showIpDialog() {
+    final TextEditingController ipController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            'Input IP',
+            textAlign: TextAlign.center,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          content: TextField(
+            controller: ipController,
+            decoration: const InputDecoration(
+              hintText: 'Enter IP address',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1B5E20),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Enter'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F5),
-    appBar: AppBar(
-         backgroundColor: const Color(0xFF1B5E20),
-         foregroundColor: Colors.white,
-         elevation: 1,
-         centerTitle: false,
-         titleSpacing: 10,
-         
-         title: Row(          
-           children: [
-            Image.asset(
-              'assets/images/app1.png',
-              height: 40,
-              fit: BoxFit.contain,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1B5E20),
+        foregroundColor: Colors.white,
+        elevation: 1,
+        centerTitle: false,
+        titleSpacing: 10,
+        toolbarHeight: 72,
+        title: Row(
+          children: [
+            ClipOval(
+              child: Image.asset(
+                'assets/images/app1.png',
+                height: 44,
+                width: 44,
+                fit: BoxFit.cover,
+              ),
             ),
             const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Broiler Feed-Pecking Analysis System',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                ),
-                Text(
-                  'BFPAS',
-                  style: TextStyle(fontSize: 15, color: Colors.white70),
-               ),
-             ],
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Broiler Feed-Pecking Analysis System',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    'BFPAS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
             ),
-         ],
+          ],
         ),
       ),
-      
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: FutureBuilder<List<ChickenRecord>>(
@@ -121,78 +172,70 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-
+                const SizedBox(height: 18),
                 Consumer<ConnectionService>(
                   builder: (context, conn, _) {
-                    return Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'System Status',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Center(
+                            GestureDetector(
+                              onTap: _showIpDialog,
                               child: ConnectionStatusBadge(
                                 label: 'Raspberry Pi 4',
                                 connected: conn.isConnected,
                                 piStatus: conn.piStatus,
                               ),
                             ),
-                            if (conn.isConnected && conn.errorMessage.isEmpty) ...[
-                              const SizedBox(height: 8),
-                              Center(
-                                child: Text(
-                                  'IP: ${ConnectionService.piAddress}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.black45,
-                                  ),
-                                ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF2E7D32),
+                                shape: BoxShape.circle,
                               ),
-                            ],
-                            if (conn.errorMessage.isNotEmpty &&
-                                !conn.isConnected) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.info_outline,
-                                    size: 13,
-                                    color: Colors.black38,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      conn.errorMessage,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black38,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              child: const Icon(
+                                Icons.videocam,
+                                size: 16,
+                                color: Colors.white,
                               ),
-                            ],
+                            ),
                           ],
                         ),
-                      ),
+                        if (conn.isConnected && conn.errorMessage.isEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'IP: ${ConnectionService.piAddress}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                        if (conn.errorMessage.isNotEmpty &&
+                            !conn.isConnected) ...[
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              conn.errorMessage,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black45,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     );
                   },
                 ),
-
                 const SizedBox(height: 20),
-
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -225,9 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         .toList(),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: _refreshRecords,
@@ -336,11 +377,9 @@ class _ChickenCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
+              const Text(
                 '🐔',
-                style: TextStyle(
-                  fontSize: 32
-                  ),
+                style: TextStyle(fontSize: 32),
               ),
               const SizedBox(height: 10),
               Text(
