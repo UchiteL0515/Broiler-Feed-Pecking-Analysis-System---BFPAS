@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/connection_service.dart';
@@ -13,14 +14,47 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   String _selectedFilter = 'View All';
   late Future<List<ChickenRecord>> _recordsFuture;
+  String _currentIp = ConnectionService.piAddress;
+
+  late AnimationController _recordingController;
+  late Animation<double> _scaleAnimation;
+
+  bool _isRecording = false;
+  Timer? _recordingTimer;
+  final ValueNotifier<int> _recordingSecondsLeft = ValueNotifier<int>(600);
+  BuildContext? _recordingDialogContext;
 
   @override
   void initState() {
     super.initState();
     _recordsFuture = DatabaseHelper.instance.getALL();
+
+    _recordingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.18,
+    ).animate(
+      CurvedAnimation(
+        parent: _recordingController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _recordingTimer?.cancel();
+    _recordingController.dispose();
+    _recordingSecondsLeft.dispose();
+    super.dispose();
   }
 
   List<ChickenRecord> _applyFilter(List<ChickenRecord> data) {
@@ -41,12 +75,28 @@ class _HomeScreenState extends State<HomeScreen> {
     await fresh;
   }
 
+  bool _isValidIp(String ip) {
+    final regex = RegExp(
+      r'^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$',
+    );
+    return regex.hasMatch(ip.trim());
+  }
+
+  String _formatTime(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    final mm = minutes.toString().padLeft(2, '0');
+    final ss = seconds.toString().padLeft(2, '0');
+    return '$mm:$ss';
+  }
+
   void _showIpDialog() {
-    final TextEditingController ipController = TextEditingController();
+    final TextEditingController ipController =
+        TextEditingController(text: _currentIp);
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text(
             'Input IP',
@@ -57,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           content: TextField(
             controller: ipController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               hintText: 'Enter IP address',
               border: OutlineInputBorder(),
@@ -67,7 +118,22 @@ class _HomeScreenState extends State<HomeScreen> {
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
+                final newIp = ipController.text.trim();
+
+                if (!_isValidIp(newIp)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid IP address.'),
+                    ),
+                  );
+                  return;
+                }
+
+                setState(() {
+                  _currentIp = newIp;
+                });
+
+                Navigator.pop(dialogContext);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1B5E20),
@@ -79,6 +145,156 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  void _startRecordingUi() {
+    _recordingTimer?.cancel();
+    _recordingSecondsLeft.value = 600;
+
+    setState(() {
+      _isRecording = true;
+    });
+
+    _recordingController.repeat(reverse: true);
+
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_recordingSecondsLeft.value > 0) {
+        _recordingSecondsLeft.value--;
+      } else {
+        _stopRecordingUi();
+
+        if (_recordingDialogContext != null) {
+          Navigator.of(_recordingDialogContext!).pop();
+          _recordingDialogContext = null;
+        }
+      }
+    });
+  }
+
+  void _stopRecordingUi() {
+    _recordingTimer?.cancel();
+    _recordingController.stop();
+    _recordingController.reset();
+
+    if (mounted) {
+      setState(() {
+        _isRecording = false;
+      });
+    }
+  }
+
+  void _showRecordingDialog() {
+    if (!_isRecording) {
+      _startRecordingUi();
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        _recordingDialogContext = dialogContext;
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 30),
+          child: SingleChildScrollView(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                children: [
+                  Opacity(
+                    opacity: 0.25,
+                    child: Image.asset(
+                      'assets/images/loading screen.png',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: 220,
+                    ),
+                  ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 20,
+                    ),
+                    color: Colors.white.withOpacity(0.90),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2E7D32),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.videocam,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Recording',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Now recording for 10 minutes',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ValueListenableBuilder<int>(
+                          valueListenable: _recordingSecondsLeft,
+                          builder: (context, value, _) {
+                            return Text(
+                              _formatTime(value),
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        const CircularProgressIndicator(
+                          color: Color(0xFF2E7D32),
+                        ),
+                        const SizedBox(height: 18),
+                        ElevatedButton(
+                          onPressed: () {
+                            _stopRecordingUi();
+                            Navigator.pop(dialogContext);
+                            _recordingDialogContext = null;
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B5E20),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Stop'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      _recordingDialogContext = null;
+    });
   }
 
   @override
@@ -190,32 +406,58 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF2E7D32),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.videocam,
-                                size: 16,
-                                color: Colors.white,
+                            GestureDetector(
+                              onTap: _showRecordingDialog,
+                              child: AnimatedBuilder(
+                                animation: _scaleAnimation,
+                                builder: (context, child) {
+                                  return Transform.scale(
+                                    scale: _isRecording
+                                        ? _scaleAnimation.value
+                                        : 1.0,
+                                    child: Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        color: _isRecording
+                                            ? const Color(0xFFB71C1C)
+                                            : const Color(0xFF2E7D32),
+                                        shape: BoxShape.circle,
+                                        boxShadow: _isRecording
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.red.withOpacity(
+                                                    0.35,
+                                                  ),
+                                                  blurRadius: 10,
+                                                  spreadRadius: 1,
+                                                ),
+                                              ]
+                                            : [],
+                                      ),
+                                      child: Icon(
+                                        _isRecording
+                                            ? Icons.fiber_manual_record
+                                            : Icons.videocam,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],
                         ),
-                        if (conn.isConnected && conn.errorMessage.isEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            'IP: ${ConnectionService.piAddress}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'IP: $_currentIp',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
                           ),
-                        ],
+                        ),
                         if (conn.errorMessage.isNotEmpty &&
                             !conn.isConnected) ...[
                           const SizedBox(height: 6),
