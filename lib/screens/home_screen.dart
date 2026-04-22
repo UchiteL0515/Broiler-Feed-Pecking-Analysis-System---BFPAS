@@ -6,6 +6,7 @@ import '../widgets/connection_status_badge.dart';
 import '../database/database_helper.dart';
 import '../models/chicken_record.dart';
 import 'chicken_detail_screen.dart';
+import '../widgets/history.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -295,6 +296,13 @@ class _HomeScreenState extends State<HomeScreen>
     ).then((_) {
       _recordingDialogContext = null;
     });
+     
+  void _openHistory() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.75),
+      builder: (_) => const HistoryDialog(),
+    );
   }
 
   @override
@@ -445,6 +453,18 @@ class _HomeScreenState extends State<HomeScreen>
                                     ),
                                   );
                                 },
+                              child: Container(
+                                width: 30,
+                                height: 30,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF2E7D32),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.videocam,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ],
@@ -551,6 +571,15 @@ class _HomeScreenState extends State<HomeScreen>
           },
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openHistory,
+        backgroundColor: const Color(0xFF2E7D32),
+        foregroundColor: Colors.white,
+        mini: true,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.menu),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
