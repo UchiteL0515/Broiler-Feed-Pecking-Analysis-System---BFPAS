@@ -137,8 +137,12 @@ class _HomeScreenState extends State<HomeScreen>
                 }
 
                 setState(() {
-                  _currentIp = newIp;
-                });
+                    newIp.isNotEmpty == true 
+                      ? ConnectionService.piAddress = newIp 
+                      : ConnectionService.piAddress = _currentIp;
+                    
+                    _currentIp = newIp;
+                  });;
 
                 Navigator.pop(dialogContext);
               },
