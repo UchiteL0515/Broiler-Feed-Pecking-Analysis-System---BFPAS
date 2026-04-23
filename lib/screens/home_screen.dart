@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../services/connection_service.dart';
 import '../database/database_helper.dart';
 import '../models/chicken_record.dart';
-import 'chicken_detail_screen.dart';
 import '../widgets/history.dart';
 import '../widgets/chicken_card.dart';
 import '../widgets/recording_dialog.dart';
