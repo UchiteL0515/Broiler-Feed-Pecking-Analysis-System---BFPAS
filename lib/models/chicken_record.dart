@@ -1,14 +1,15 @@
-// This is the model that the records to be inserted in the database will be following
+// This is the model used for records inserted into SQLite and records received
+// from the Raspberry Pi server.
 
-class ChickenRecord{
+class ChickenRecord {
   final int? id;
   final int chickenId;
   final String status; // 'Normal' or 'Anomaly'
-  final int feedDuration; // seconds
-  final int peckFrequency; // pecks per minute
-  final int headMovementVariability;
-  final int pauseInterval; // seconds
-  final int trajectoryPattern;
+  final double feedDuration; // active feeding duration in seconds
+  final double peckFrequency; // pecks per minute
+  final double headMovementVariability; // hmv_std_velocity
+  final double pauseInterval; // pause_std_sec
+  final double trajectoryPattern; // trajectory_consistency
   final DateTime timestamp;
 
   ChickenRecord({
@@ -23,10 +24,40 @@ class ChickenRecord{
     required this.timestamp,
   });
 
-  // Convert a record to a Map for SQLite insertion
-  Map<String, dynamic> toMap(){
-    return{
-      if(id != null) 'id': id,
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
+  static int _toInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
+  }
+
+  String get feedDurationText => '${feedDuration.toStringAsFixed(2)}s';
+  String get peckFrequencyText => '${peckFrequency.toStringAsFixed(2)} ppm';
+  String get headMovementVariabilityText => headMovementVariability.toStringAsFixed(2);
+  String get pauseIntervalText => '${pauseInterval.toStringAsFixed(2)}s';
+  String get trajectoryPatternText => trajectoryPattern.toStringAsFixed(4);
+
+  factory ChickenRecord.fromServerJson(Map<String, dynamic> json) {
+    return ChickenRecord(
+      chickenId: _toInt(json['id'] ?? json['chicken_id']),
+      status: (json['status'] ?? 'No analysis yet').toString(),
+      feedDuration: _toDouble(json['active_feeding_duration_sec']),
+      peckFrequency: _toDouble(json['peck_frequency_per_min']),
+      headMovementVariability: _toDouble(json['hmv_std_velocity']),
+      pauseInterval: _toDouble(json['pause_std_sec']),
+      trajectoryPattern: _toDouble(json['trajectory_consistency']),
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      if (id != null) 'id': id,
       'chicken_id': chickenId,
       'status': status,
       'feed_duration': feedDuration,
@@ -38,27 +69,26 @@ class ChickenRecord{
     };
   }
 
-  // Create a record from a SQLite row Map
-  factory ChickenRecord.fromMap(Map<String, dynamic> map){
+  factory ChickenRecord.fromMap(Map<String, dynamic> map) {
     return ChickenRecord(
       id: map['id'] as int?,
-      chickenId: map['chicken_id'] as int,
+      chickenId: _toInt(map['chicken_id']),
       status: map['status'] as String,
-      feedDuration: map['feed_duration'] as int,
-      peckFrequency: map['peck_frequency'] as int,
-      headMovementVariability: map['head_movement_variability'] as int,
-      pauseInterval: map['pause_interval'] as int,
-      trajectoryPattern: map['trajectory_pattern'] as int,
+      feedDuration: _toDouble(map['feed_duration']),
+      peckFrequency: _toDouble(map['peck_frequency']),
+      headMovementVariability: _toDouble(map['head_movement_variability']),
+      pauseInterval: _toDouble(map['pause_interval']),
+      trajectoryPattern: _toDouble(map['trajectory_pattern']),
       timestamp: DateTime.parse(map['timestamp'] as String),
     );
   }
 
   @override
-  String toString(){
+  String toString() {
     return 'ChickenRecord(id: $id, chickenId: $chickenId, status: $status, '
-      'feedDuration: ${feedDuration}s, peckFrequency: $peckFrequency ppm, '
-      'headMovVariability: $headMovementVariability, '
-      'pauseInterval: ${pauseInterval}s, trajectory: $trajectoryPattern, '
-      'timestamp: $timestamp)';
+        'feedDuration: ${feedDurationText}, peckFrequency: ${peckFrequencyText}, '
+        'headMovVariability: ${headMovementVariabilityText}, '
+        'pauseInterval: ${pauseIntervalText}, trajectory: ${trajectoryPatternText}, '
+        'timestamp: $timestamp)';
   }
 }

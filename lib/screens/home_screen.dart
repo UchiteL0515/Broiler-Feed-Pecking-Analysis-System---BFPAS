@@ -20,6 +20,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
+  static const int _analysisDurationSeconds = 10; // change to 600 for 10 minutes
+
   String _selectedFilter = 'View All';
   late Future<List<ChickenRecord>> _recordsFuture;
   String _currentIp = ConnectionService.piAddress;
@@ -29,13 +31,14 @@ class _HomeScreenState extends State<HomeScreen>
 
   bool _isRecording = false;
   Timer? _recordingTimer;
-  final ValueNotifier<int> _recordingSecondsLeft = ValueNotifier<int>(10);
+  final ValueNotifier<int> _recordingSecondsLeft =
+      ValueNotifier<int>(_analysisDurationSeconds);
   BuildContext? _recordingDialogContext;
 
   @override
   void initState() {
     super.initState();
-    _recordsFuture = DatabaseHelper.instance.getALL();
+    _recordsFuture = DatabaseHelper.instance.getLatestPerChicken();
 
     _recordingController = AnimationController(
       vsync: this,
@@ -72,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _refreshRecords() async {
-    final fresh = DatabaseHelper.instance.getALL();
+    final fresh = DatabaseHelper.instance.getLatestPerChicken();
     setState(() {
       _recordsFuture = fresh;
     });
@@ -94,15 +97,21 @@ class _HomeScreenState extends State<HomeScreen>
     return '$mm:$ss';
   }
 
-    void _showRecordingInProgressMessage() {
+  void _showSnack(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Recording in progress. Please wait until it finishes.'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
+
+  void _showRecordingInProgressMessage() {
+    _showSnack('Recording in progress. Please wait until it finishes.');
+  }
+
   void _showIpDialog() {
     final TextEditingController ipController =
         TextEditingController(text: _currentIp);
@@ -130,29 +139,21 @@ class _HomeScreenState extends State<HomeScreen>
           actionsAlignment: MainAxisAlignment.center,
           actions: [
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final newIp = ipController.text.trim();
 
                 if (!_isValidIp(newIp)) {
-                  if (!mounted) return;
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a valid IP address.'),
-                    ),
-                  );
+                  _showSnack('Please enter a valid IP address.');
                   return;
                 }
 
                 setState(() {
-                    newIp.isNotEmpty == true 
-                      ? ConnectionService.piAddress = newIp 
-                      : ConnectionService.piAddress = _currentIp;
-                    
-                    _currentIp = newIp;
-                  });;
+                  ConnectionService.piAddress = newIp;
+                  _currentIp = newIp;
+                });
 
                 Navigator.pop(dialogContext);
+                await context.read<ConnectionService>().reconnect();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1B5E20),
@@ -176,9 +177,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _startRecordingUi() {
+  void _startRecordingUi(int durationSeconds) {
     _recordingTimer?.cancel();
-    _recordingSecondsLeft.value = 10; // change to 600 for 10 minutes
+    _recordingSecondsLeft.value = durationSeconds;
 
     setState(() {
       _isRecording = true;
@@ -186,18 +187,12 @@ class _HomeScreenState extends State<HomeScreen>
 
     _recordingController.repeat(reverse: true);
 
-    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (_recordingSecondsLeft.value > 0) {
         _recordingSecondsLeft.value--;
       } else {
-        _stopRecordingUi();
-
-        if (_recordingDialogContext != null) {
-          Navigator.of(_recordingDialogContext!).pop();
-          _recordingDialogContext = null;
-        }
-
-        _showResultDialog();
+        timer.cancel();
+        await _finishRecordingSession();
       }
     });
   }
@@ -214,14 +209,59 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-    void _showRecordingDialog() {
+  Future<void> _saveLatestPiDataToDatabase() async {
+    final conn = context.read<ConnectionService>();
+    await conn.waitForInferenceToFinish();
+    final records = await conn.fetchChickenData();
+
+    for (final record in records) {
+      if (record.status == 'Normal' || record.status == 'Anomaly') {
+        await DatabaseHelper.instance.insert(record);
+      }
+    }
+
+    await _refreshRecords();
+  }
+
+  Future<void> _finishRecordingSession() async {
+    _stopRecordingUi();
+
+    if (_recordingDialogContext != null) {
+      Navigator.of(_recordingDialogContext!).pop();
+      _recordingDialogContext = null;
+    }
+
+    try {
+      await _saveLatestPiDataToDatabase();
+      if (!mounted) return;
+      _showResultDialog();
+    } catch (e) {
+      _showSnack('Inference finished, but failed to load/save results: $e');
+    }
+  }
+
+  Future<void> _showRecordingDialog() async {
     if (_isRecording) {
       _showRecordingInProgressMessage();
       return;
     }
 
-    _startRecordingUi();
+    final conn = context.read<ConnectionService>();
+    if (!conn.isConnected) {
+      _showSnack('Raspberry Pi is not connected. Check IP and try again.');
+      return;
+    }
 
+    try {
+      await conn.startInference(durationSec: _analysisDurationSeconds);
+    } catch (e) {
+      _showSnack('Failed to start inference: $e');
+      return;
+    }
+
+    _startRecordingUi(_analysisDurationSeconds);
+
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -238,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen>
           child: RecordingDialog(
             recordingSecondsLeft: _recordingSecondsLeft,
             formatTime: _formatTime,
-            onStop: () {}, // kept because RecordingDialog still requires it
+            onStop: () {},
           ),
         );
       },

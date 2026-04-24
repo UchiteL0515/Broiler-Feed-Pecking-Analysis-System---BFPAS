@@ -152,11 +152,11 @@ class HistoryDialog extends StatelessWidget {
 class _HistoryCard extends StatelessWidget {
   final int chickenId;
   final String status;
-  final int feedDuration;
-  final int peckFrequency;
-  final int headMovementVariability;
-  final int pauseInterval;
-  final int trajectoryPattern;
+  final double feedDuration;
+  final double peckFrequency;
+  final double headMovementVariability;
+  final double pauseInterval;
+  final double trajectoryPattern;
   final String dateText;
 
   const _HistoryCard({

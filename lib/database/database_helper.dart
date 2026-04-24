@@ -6,7 +6,7 @@ import '../models/chicken_record.dart';
 
 class DatabaseHelper{
   static const _dbName = 'badmsystem_chicken.db';
-  static const _dbVersion = 2; // bump whenever the schema changes
+  static const _dbVersion = 3; // bumped: metrics are REAL and dashboard uses latest per chicken
   static const table = 'chicken_behavior';
 
   // Singleton instance
@@ -38,11 +38,11 @@ class DatabaseHelper{
         id                          INTEGER PRIMARY KEY AUTOINCREMENT,
         chicken_id                  INTEGER NOT NULL,
         status                      TEXT NOT NULL CHECK(status IN ('Normal', 'Anomaly')),
-        feed_duration               INTEGER NOT NULL,
-        peck_frequency              INTEGER NOT NULL,
-        head_movement_variability   INTEGER NOT NULL,
-        pause_interval              INTEGER NOT NULL,        
-        trajectory_pattern          INTEGER NOT NULL,
+        feed_duration               REAL NOT NULL,
+        peck_frequency              REAL NOT NULL,
+        head_movement_variability   REAL NOT NULL,
+        pause_interval              REAL NOT NULL,        
+        trajectory_pattern          REAL NOT NULL,
         timestamp                   TEXT NOT NULL
       )
     ''');
@@ -66,6 +66,37 @@ class DatabaseHelper{
     final db = await database;
     final rows = await db.query(table, orderBy: 'timestamp DESC');
     return rows.map(ChickenRecord.fromMap).toList();
+  }
+
+  // Dashboard query: returns only the newest row for each chicken.
+  // History still uses getALL(), so old sessions are preserved.
+  Future<List<ChickenRecord>> getLatestPerChicken() async{
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT t.*
+      FROM  t
+      INNER JOIN (
+        SELECT chicken_id, MAX(timestamp) AS latest_timestamp
+        FROM 
+        GROUP BY chicken_id
+      ) latest
+      ON t.chicken_id = latest.chicken_id
+      AND t.timestamp = latest.latest_timestamp
+      ORDER BY t.chicken_id ASC
+    ''');
+    return rows.map(ChickenRecord.fromMap).toList();
+  }
+
+  // Optional helper if you want only one saved row per chicken.
+  // Do not use this if you want full session history.
+  Future<int> upsertLatestForChicken(ChickenRecord record) async{
+    final db = await database;
+    await db.delete(
+      table,
+      where: 'chicken_id = ?',
+      whereArgs: [record.chickenId],
+    );
+    return db.insert(table, record.toMap());
   }
 
   Future<List<ChickenRecord>> getByStatus(String status) async{
