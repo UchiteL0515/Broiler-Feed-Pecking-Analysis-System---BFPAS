@@ -1,7 +1,44 @@
 import 'package:flutter/material.dart';
+import '../database/database_helper.dart';
+import '../models/chicken_record.dart';
 
 class HistoryDialog extends StatelessWidget {
   const HistoryDialog({super.key});
+
+  String _formatDateTime(DateTime timestamp) {
+    final month = _monthName(timestamp.month);
+    final day = timestamp.day;
+    final year = timestamp.year;
+
+    final hour = timestamp.hour > 12
+        ? timestamp.hour - 12
+        : timestamp.hour == 0
+            ? 12
+            : timestamp.hour;
+
+    final minute = timestamp.minute.toString().padLeft(2, '0');
+    final period = timestamp.hour >= 12 ? 'PM' : 'AM';
+
+    return '$month $day, $year • $hour:$minute $period';
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return months[month - 1];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,60 +81,64 @@ class HistoryDialog extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(14),
-                  children: const [
-                    _HistoryCard(
-                      chickenId: 2,
-                      status: 'Anomaly',
-                      feedDuration: 6,
-                      peckFrequency: 3,
-                      headMovementVariability: 2,
-                      pauseInterval: 20,
-                      trajectoryPattern: 2,
-                      dateText: 'April 22, 2026 • 04:30 PM • Session 2',
-                    ),
-                    _HistoryCard(
-                      chickenId: 1,
-                      status: 'Normal',
-                      feedDuration: 30,
-                      peckFrequency: 22,
-                      headMovementVariability: 5,
-                      pauseInterval: 6,
-                      trajectoryPattern: 5,
-                      dateText: 'April 22, 2026 • 04:30 PM • Session 2',
-                    ),
-                    _HistoryCard(
-                      chickenId: 3,
-                      status: 'Anomaly',
-                      feedDuration: 5,
-                      peckFrequency: 4,
-                      headMovementVariability: 2,
-                      pauseInterval: 22,
-                      trajectoryPattern: 1,
-                      dateText: 'April 22, 2026 • 08:00 AM • Session 1',
-                    ),
-                    _HistoryCard(
-                      chickenId: 2,
-                      status: 'Normal',
-                      feedDuration: 28,
-                      peckFrequency: 21,
-                      headMovementVariability: 6,
-                      pauseInterval: 5,
-                      trajectoryPattern: 4,
-                      dateText: 'April 22, 2026 • 08:00 AM • Session 1',
-                    ),
-                    _HistoryCard(
-                      chickenId: 1,
-                      status: 'Normal',
-                      feedDuration: 32,
-                      peckFrequency: 24,
-                      headMovementVariability: 5,
-                      pauseInterval: 4,
-                      trajectoryPattern: 5,
-                      dateText: 'April 22, 2026 • 08:00 AM • Session 1',
-                    ),
-                  ],
+                child: FutureBuilder<List<ChickenRecord>>(
+                  future: DatabaseHelper.instance.getALL(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF2E7D32),
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Text(
+                          'Error loading history.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      );
+                    }
+
+                    final records = snapshot.data ?? [];
+
+                    if (records.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No history yet.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(14),
+                      itemCount: records.length,
+                      itemBuilder: (context, index) {
+                        final record = records[index];
+
+                        return _HistoryCard(
+                          chickenId: record.chickenId,
+                          status: record.status,
+                          feedDuration: record.feedDuration,
+                          peckFrequency: record.peckFrequency,
+                          headMovementVariability:
+                              record.headMovementVariability,
+                          pauseInterval: record.pauseInterval,
+                          trajectoryPattern: record.trajectoryPattern,
+                          dateText:
+                              '${_formatDateTime(record.timestamp)} • Session ${index + 1}',
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],
@@ -213,7 +254,7 @@ class _HistoryCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 _MetricChip(label: 'Feed', value: '$feedDuration'),
-                _MetricChip(label: 'PPM', value: '$peckFrequency'),
+                _MetricChip(label: 'Peck', value: '$peckFrequency'),
                 _MetricChip(label: 'HMV', value: '$headMovementVariability'),
                 _MetricChip(label: 'Pause', value: '$pauseInterval'),
                 _MetricChip(label: 'Path', value: '$trajectoryPattern'),

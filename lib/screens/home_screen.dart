@@ -94,6 +94,15 @@ class _HomeScreenState extends State<HomeScreen>
     return '$mm:$ss';
   }
 
+    void _showRecordingInProgressMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Recording in progress. Please wait until it finishes.'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
   void _showIpDialog() {
     final TextEditingController ipController =
         TextEditingController(text: _currentIp);
@@ -205,10 +214,13 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _showRecordingDialog() {
-    if (!_isRecording) {
-      _startRecordingUi();
+    void _showRecordingDialog() {
+    if (_isRecording) {
+      _showRecordingInProgressMessage();
+      return;
     }
+
+    _startRecordingUi();
 
     showDialog(
       context: context,
@@ -216,14 +228,18 @@ class _HomeScreenState extends State<HomeScreen>
       builder: (dialogContext) {
         _recordingDialogContext = dialogContext;
 
-        return RecordingDialog(
-          recordingSecondsLeft: _recordingSecondsLeft,
-          formatTime: _formatTime,
-          onStop: () {
-            _stopRecordingUi();
-            Navigator.pop(dialogContext);
-            _recordingDialogContext = null;
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
+            if (!didPop) {
+              _showRecordingInProgressMessage();
+            }
           },
+          child: RecordingDialog(
+            recordingSecondsLeft: _recordingSecondsLeft,
+            formatTime: _formatTime,
+            onStop: () {}, // kept because RecordingDialog still requires it
+          ),
         );
       },
     ).then((_) {

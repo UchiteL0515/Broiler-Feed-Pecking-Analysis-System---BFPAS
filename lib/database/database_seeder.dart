@@ -70,7 +70,20 @@ class DatabaseSeeder{
         trajectoryPattern: 1,
         timestamp: ts(5),
       ),
+
+      ChickenRecord(
+        chickenId: 4,
+        status: 'Anomaly',
+        feedDuration: 5,
+        peckFrequency: 4,
+        headMovementVariability: 2,
+        pauseInterval: 22,
+        trajectoryPattern: 1,
+        timestamp: ts(5),
+      ),
     ];
+
+
 
     for (final record in records){
       await db.insert(record);
