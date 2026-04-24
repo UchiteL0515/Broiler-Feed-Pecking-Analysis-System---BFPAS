@@ -318,11 +318,13 @@ class _HomeScreenState extends State<HomeScreen>
                       value: total.toString(),
                       color: Colors.blueGrey,
                     ),
+                    const SizedBox(width: 10),
                     StatCard(
                       label: 'Normal',
                       value: normal.toString(),
                       color: const Color(0xFF2E7D32),
                     ),
+                    const SizedBox(width: 10),
                     StatCard(
                       label: 'Anomaly',
                       value: anomaly.toString(),
@@ -464,8 +466,8 @@ class _HomeScreenState extends State<HomeScreen>
                               Center(
                                 child: Text(
                                   _selectedFilter == 'View All'
-                                      ? 'No records yet.'
-                                      : 'No $_selectedFilter chickens.',
+                                      ? 'No recordings yet.'
+                                      : 'No $_selectedFilter results yet.' ,
                                   style: const TextStyle(color: Colors.black45),
                                 ),
                               ),
@@ -478,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen>
                               crossAxisCount: 2,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
-                              childAspectRatio: 1.1,
+                              childAspectRatio: 0.95,
                             ),
                             itemCount: filtered.length,
                             itemBuilder: (context, index) {
