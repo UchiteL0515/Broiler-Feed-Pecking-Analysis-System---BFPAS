@@ -347,27 +347,18 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: FutureBuilder<List<ChickenRecord>>(
-          future: _recordsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FutureBuilder<List<ChickenRecord>>(
+              future: _recordsFuture,
+              builder: (context, snapshot) {
+                final data = snapshot.data ?? [];
+                final total = data.length;
+                final normal = data.where((e) => e.status == 'Normal').length;
+                final anomaly = data.where((e) => e.status == 'Anomaly').length;
 
-            if (snapshot.hasError) {
-              return const Center(child: Text('Error loading records'));
-            }
-
-            final data = snapshot.data ?? [];
-            final total = data.length;
-            final normal = data.where((e) => e.status == 'Normal').length;
-            final anomaly = data.where((e) => e.status == 'Anomaly').length;
-            final filtered = _applyFilter(data);
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+                return Row(
                   children: [
                     StatCard(
                       label: 'Total',
@@ -387,181 +378,204 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Colors.red,
                     ),
                   ],
-                ),
-                const SizedBox(height: 18),
-                Consumer<ConnectionService>(
-                  builder: (context, conn, _) {
-                    return Column(
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+            Consumer<ConnectionService>(
+              builder: (context, conn, _) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GestureDetector(
-                              onTap: _showIpDialog,
-                              child: ConnectionStatusBadge(
-                                label: 'Raspberry Pi 4',
-                                connected: conn.isConnected,
-                                piStatus: conn.piStatus,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: _showRecordingDialog,
-                              child: AnimatedBuilder(
-                                animation: _scaleAnimation,
-                                builder: (context, child) {
-                                  return Transform.scale(
-                                    scale: _isRecording
-                                        ? _scaleAnimation.value
-                                        : 1.0,
-                                    child: Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        color: _isRecording
-                                            ? const Color(0xFFB71C1C)
-                                            : const Color(0xFF2E7D32),
-                                        shape: BoxShape.circle,
-                                        boxShadow: _isRecording
-                                            ? [
-                                                BoxShadow(
-                                                  color: Colors.red.withOpacity(
-                                                    0.35,
-                                                  ),
-                                                  blurRadius: 10,
-                                                  spreadRadius: 1,
-                                                ),
-                                              ]
-                                            : [],
-                                      ),
-                                      child: Icon(
-                                        _isRecording
-                                            ? Icons.fiber_manual_record
-                                            : Icons.videocam,
-                                        size: 16,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
+                        GestureDetector(
+                          onTap: _showIpDialog,
+                          child: ConnectionStatusBadge(
+                            label: 'Raspberry Pi 4',
+                            connected: conn.isConnected,
+                            piStatus: conn.piStatus,
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'IP: $_currentIp',
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: _showRecordingDialog,
+                          child: AnimatedBuilder(
+                            animation: _scaleAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _isRecording
+                                    ? _scaleAnimation.value
+                                    : 1.0,
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: _isRecording
+                                        ? const Color(0xFFB71C1C)
+                                        : const Color(0xFF2E7D32),
+                                    shape: BoxShape.circle,
+                                    boxShadow: _isRecording
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.red.withOpacity(
+                                                0.35,
+                                              ),
+                                              blurRadius: 10,
+                                              spreadRadius: 1,
+                                            ),
+                                          ]
+                                        : [],
+                                  ),
+                                  child: Icon(
+                                    _isRecording
+                                        ? Icons.fiber_manual_record
+                                        : Icons.videocam,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'IP: $_currentIp',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    if (conn.errorMessage.isNotEmpty &&
+                        !conn.isConnected) ...[
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          conn.errorMessage,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Colors.black54,
+                            color: Colors.black45,
                           ),
                         ),
-                        if (conn.errorMessage.isNotEmpty &&
-                            !conn.isConnected) ...[
-                          const SizedBox(height: 6),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: ['View All', 'Normal', 'Anomaly']
+                    .map(
+                      (label) {
+                        final isSelected = _selectedFilter == label;
+                        final color = label == 'Anomaly'
+                            ? Colors.red
+                            : const Color(0xFF2E7D32);
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: FilterChip(
+                            label: Text(label),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedFilter = label;
+                              });
+                            },
+                            selectedColor: color.withOpacity(0.2),
+                            checkmarkColor: color,
+                            labelStyle: TextStyle(
+                              color: isSelected ? color : Colors.black54,
+                              fontWeight:
+                                  isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            side: BorderSide(
+                              color: isSelected ? color : Colors.black26,
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                    .toList(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshRecords,
+                child: FutureBuilder<List<ChickenRecord>>(
+                  future: _recordsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 150),
+                          Center(child: CircularProgressIndicator()),
+                        ],
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 150),
+                          Center(child: Text('Error loading records')),
+                        ],
+                      );
+                    }
+
+                    final data = snapshot.data ?? [];
+                    final filtered = _applyFilter(data);
+
+                    if (filtered.isEmpty) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          const SizedBox(height: 150),
+                          Center(
                             child: Text(
-                              conn.errorMessage,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black45,
-                              ),
+                              _selectedFilter == 'View All'
+                                  ? 'No chicken analysis records yet.'
+                                  : 'No $_selectedFilter results yet.',
+                              style: const TextStyle(color: Colors.black45),
                             ),
                           ),
                         ],
-                      ],
+                      );
+                    }
+
+                    return GridView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.95,
+                      ),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final record = filtered[index];
+                        return ChickenCard(record: record);
+                      },
                     );
                   },
                 ),
-               const SizedBox(height: 20),
-                Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: ['View All', 'Normal', 'Anomaly']
-                        .map(
-                          (label) {
-                            final isSelected = _selectedFilter == label;
-
-                            // ✅ NEW: dynamic color
-                            final color = label == 'Anomaly'
-                                ? Colors.red
-                                : const Color(0xFF2E7D32);
-
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              child: FilterChip(
-                                label: Text(label),
-                                selected: isSelected,
-                                onSelected: (_) {
-                                  setState(() {
-                                    _selectedFilter = label;
-                                  });
-                                },
-
-                                // ✅ UPDATED COLORS
-                                selectedColor: color.withOpacity(0.2),
-                                checkmarkColor: color,
-
-                                labelStyle: TextStyle(
-                                  color: isSelected ? color : Colors.black54,
-                                  fontWeight:
-                                      isSelected ? FontWeight.bold : FontWeight.normal,
-                                ),
-
-                                // ✅ Optional: border for better look
-                                side: BorderSide(
-                                  color: isSelected ? color : Colors.black26,
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                        .toList(),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _refreshRecords,
-                    child: filtered.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              const SizedBox(height: 150),
-                              Center(
-                                child: Text(
-                                  _selectedFilter == 'View All'
-                                      ? 'No recordings yet.'
-                                      : 'No $_selectedFilter results yet.' ,
-                                  style: const TextStyle(color: Colors.black45),
-                                ),
-                              ),
-                            ],
-                          )
-                        : GridView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.95,
-                            ),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              final record = filtered[index];
-                              return ChickenCard(record: record);
-                            },
-                          ),
-                  ),
-                ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
