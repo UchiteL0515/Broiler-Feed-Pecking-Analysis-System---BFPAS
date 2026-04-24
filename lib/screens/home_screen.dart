@@ -437,35 +437,48 @@ class _HomeScreenState extends State<HomeScreen>
                     );
                   },
                 ),
-                const SizedBox(height: 20),
+               const SizedBox(height: 20),
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: ['View All', 'Normal', 'Anomaly']
                         .map(
-                          (label) => Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: FilterChip(
-                              label: Text(label),
-                              selected: _selectedFilter == label,
-                              onSelected: (_) {
-                                setState(() {
-                                  _selectedFilter = label;
-                                });
-                              },
-                              selectedColor:
-                                  const Color(0xFF2E7D32).withOpacity(0.2),
-                              checkmarkColor: const Color(0xFF2E7D32),
-                              labelStyle: TextStyle(
-                                color: _selectedFilter == label
-                                    ? const Color(0xFF2E7D32)
-                                    : Colors.black54,
-                                fontWeight: _selectedFilter == label
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                          (label) {
+                            final isSelected = _selectedFilter == label;
+
+                            // ✅ NEW: dynamic color
+                            final color = label == 'Anomaly'
+                                ? Colors.red
+                                : const Color(0xFF2E7D32);
+
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: FilterChip(
+                                label: Text(label),
+                                selected: isSelected,
+                                onSelected: (_) {
+                                  setState(() {
+                                    _selectedFilter = label;
+                                  });
+                                },
+
+                                // ✅ UPDATED COLORS
+                                selectedColor: color.withOpacity(0.2),
+                                checkmarkColor: color,
+
+                                labelStyle: TextStyle(
+                                  color: isSelected ? color : Colors.black54,
+                                  fontWeight:
+                                      isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
+
+                                // ✅ Optional: border for better look
+                                side: BorderSide(
+                                  color: isSelected ? color : Colors.black26,
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         )
                         .toList(),
                   ),
