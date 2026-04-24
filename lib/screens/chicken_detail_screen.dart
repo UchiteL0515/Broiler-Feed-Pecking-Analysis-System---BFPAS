@@ -153,27 +153,27 @@ class _ChickenDetailScreenState extends State<ChickenDetailScreen>{
                       _DataRow(
                         icon: Icons.timer_outlined,
                         label: 'Feed Duration',
-                        value: '${record.feedDuration}s',
+                        value: record.feedDurationText,
                       ),
                       _DataRow(
                         icon: Icons.speed_rounded,
                         label: 'Peck Frequency',
-                        value: '${record.peckFrequency} ppm',
+                        value: record.peckFrequencyText,
                       ),
                       _DataRow(
                         icon: Icons.swap_vert_rounded,
                         label: 'Head Movement Variability',
-                        value: '${record.headMovementVariability}',
+                        value: record.headMovementVariabilityText,
                       ),
                       _DataRow(
                         icon: Icons.pause_circle_outline_rounded,
                         label: 'Pause Interval',
-                        value: '${record.pauseInterval}s',
+                        value: record.pauseIntervalText,
                       ),
                       _DataRow(
                         icon: Icons.route_rounded,
                         label: 'Trajectory Pattern',
-                        value: '${record.trajectoryPattern}',
+                        value: record.trajectoryPatternText,
                       ),
                     ],
                   ),

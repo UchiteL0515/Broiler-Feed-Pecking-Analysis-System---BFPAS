@@ -3,11 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'services/connection_service.dart';
 import 'screens/home_screen.dart';
-import 'database/database_seeder.dart';
+// import 'database/database_seeder.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();  
-  if(kDebugMode) await DatabaseSeeder.seed();
+  // Disable demo seeding when testing real Raspberry Pi inference results.
+  // if(kDebugMode) await DatabaseSeeder.seed();
   runApp(
     MultiProvider(
       providers: [
