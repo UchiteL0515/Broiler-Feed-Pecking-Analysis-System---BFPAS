@@ -22,24 +22,28 @@ class RecordingDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
+              // Background image
               Positioned.fill(
-                child: Opacity(
-                  opacity: 0.75,
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/loading screen.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                child: Image.asset(
+                  'assets/images/loading screen.png',
+                  fit: BoxFit.cover,
                 ),
               ),
+
+              // Soft overlay
+              Positioned.fill(
+                child: Container(
+                  color: Colors.white.withOpacity(0.90),
+                ),
+              ),
+
+              // Main content
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 20,
                 ),
-                color: Colors.white.withOpacity(0.90),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
