@@ -22,6 +22,30 @@ class HistoryDialog extends StatelessWidget {
     return '$month $day, $year • $hour:$minute $period';
   }
 
+  String _getSessionLabel(DateTime timestamp) {
+    final hour = timestamp.hour;
+
+    if (hour >= 5 && hour < 12) {
+      return 'Morning Session';
+    } else if (hour >= 12 && hour <= 18) {
+      return 'Afternoon Session';
+    } else {
+      return 'Off-Schedule Session';
+    }
+  }
+
+  Color _getSessionColor(DateTime timestamp) {
+    final hour = timestamp.hour;
+
+    if (hour >= 5 && hour < 12) {
+      return const Color(0xFF2E7D32); // green
+    } else if (hour >= 12 && hour <= 18) {
+      return const Color(0xFFE65100); // orange
+    } else {
+      return Colors.grey;
+    }
+  }
+
   String _monthName(int month) {
     const months = [
       'January',
@@ -133,8 +157,9 @@ class HistoryDialog extends StatelessWidget {
                               record.headMovementVariability,
                           pauseInterval: record.pauseInterval,
                           trajectoryPattern: record.trajectoryPattern,
-                          dateText:
-                              '${_formatDateTime(record.timestamp)} • Session ${index + 1}',
+                          dateText: _formatDateTime(record.timestamp),
+                          sessionLabel: _getSessionLabel(record.timestamp),
+                          sessionColor: _getSessionColor(record.timestamp),
                         );
                       },
                     );
@@ -158,6 +183,8 @@ class _HistoryCard extends StatelessWidget {
   final double pauseInterval;
   final double trajectoryPattern;
   final String dateText;
+  final String sessionLabel;
+  final Color sessionColor;
 
   const _HistoryCard({
     required this.chickenId,
@@ -168,6 +195,8 @@ class _HistoryCard extends StatelessWidget {
     required this.pauseInterval,
     required this.trajectoryPattern,
     required this.dateText,
+    required this.sessionLabel,
+    required this.sessionColor,
   });
 
   @override
@@ -240,13 +269,35 @@ class _HistoryCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text(
-              dateText,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    dateText,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: sessionColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    sessionLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: sessionColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             Wrap(

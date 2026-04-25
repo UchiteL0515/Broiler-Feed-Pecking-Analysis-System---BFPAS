@@ -3,12 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'services/connection_service.dart';
 import 'screens/home_screen.dart';
-// import 'database/database_seeder.dart';
+import 'screens/animated_splash_screen.dart';
+//import 'database/database_seeder.dart';
 
-void main() async{
-  WidgetsFlutterBinding.ensureInitialized();  
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   // Disable demo seeding when testing real Raspberry Pi inference results.
-  // if(kDebugMode) await DatabaseSeeder.seed();
+  //if (kDebugMode) await DatabaseSeeder.seed();
   runApp(
     MultiProvider(
       providers: [
@@ -19,11 +20,11 @@ void main() async{
   );
 }
 
-class BFPASApp extends StatelessWidget{
+class BFPASApp extends StatelessWidget {
   const BFPASApp({super.key});
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'BFPAS',
       debugShowCheckedModeBanner: false,
@@ -38,7 +39,14 @@ class BFPASApp extends StatelessWidget{
           elevation: 2,
         ),
       ),
-      home: const HomeScreen(),
+
+      // ✅ ADD THIS
+      home: const AnimatedSplashScreen(),
+
+      // keep this
+      routes: {
+        '/home': (context) => const HomeScreen(),
+      },
     );
   }
 }

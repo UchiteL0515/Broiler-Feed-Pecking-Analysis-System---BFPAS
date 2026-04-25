@@ -22,7 +22,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  static const int _analysisDurationSeconds = 600; 
+  static const int _analysisDurationSeconds = 10;
 
   String _selectedFilter = 'View All';
   late Future<List<ChickenRecord>> _recordsFuture;
@@ -536,9 +536,8 @@ class _HomeScreenState extends State<HomeScreen>
                             animation: _scaleAnimation,
                             builder: (context, child) {
                               return Transform.scale(
-                                scale: _isRecording
-                                    ? _scaleAnimation.value
-                                    : 1.0,
+                                scale:
+                                    _isRecording ? _scaleAnimation.value : 1.0,
                                 child: Container(
                                   width: 30,
                                   height: 30,
@@ -582,8 +581,7 @@ class _HomeScreenState extends State<HomeScreen>
                         color: Colors.black54,
                       ),
                     ),
-                    if (conn.errorMessage.isNotEmpty &&
-                        !conn.isConnected) ...[
+                    if (conn.errorMessage.isNotEmpty && !conn.isConnected) ...[
                       const SizedBox(height: 6),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
