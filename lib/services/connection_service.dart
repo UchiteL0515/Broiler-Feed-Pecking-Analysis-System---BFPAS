@@ -144,6 +144,20 @@ class ConnectionService extends ChangeNotifier {
         .toList();
   }
 
+  Future<Map<String, dynamic>> fetchInferenceStatus() async {
+    final url = Uri.parse('http://$piAddress:5000/inference/status');
+
+    final response = await http.get(url).timeout(
+      const Duration(seconds: 5),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch inference status');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(

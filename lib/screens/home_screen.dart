@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/connection_service.dart';
 import '../database/database_helper.dart';
 import '../models/chicken_record.dart';
@@ -10,6 +11,7 @@ import '../widgets/recording_dialog.dart';
 import '../widgets/result_dialog.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/connection_status_badge.dart';
+import '../widgets/process_progress_timeline.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +22,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  static const int _analysisDurationSeconds = 60; // change to 600 for 10 minutes
+  static const int _analysisDurationSeconds = 60; 
 
   String _selectedFilter = 'View All';
   late Future<List<ChickenRecord>> _recordsFuture;
@@ -31,13 +33,19 @@ class _HomeScreenState extends State<HomeScreen>
 
   bool _isRecording = false;
   Timer? _recordingTimer;
+
   final ValueNotifier<int> _recordingSecondsLeft =
       ValueNotifier<int>(_analysisDurationSeconds);
+
+  final ValueNotifier<int> _processStep = ValueNotifier<int>(0);
+  final ValueNotifier<double> _processPercent = ValueNotifier<double>(0.0);
+
   BuildContext? _recordingDialogContext;
 
   @override
   void initState() {
     super.initState();
+
     _recordsFuture = DatabaseHelper.instance.getLatestPerChicken();
 
     _recordingController = AnimationController(
@@ -61,6 +69,8 @@ class _HomeScreenState extends State<HomeScreen>
     _recordingTimer?.cancel();
     _recordingController.dispose();
     _recordingSecondsLeft.dispose();
+    _processStep.dispose();
+    _processPercent.dispose();
     super.dispose();
   }
 
@@ -68,17 +78,21 @@ class _HomeScreenState extends State<HomeScreen>
     if (_selectedFilter == 'Normal') {
       return data.where((r) => r.status == 'Normal').toList();
     }
+
     if (_selectedFilter == 'Anomaly') {
       return data.where((r) => r.status == 'Anomaly').toList();
     }
+
     return data;
   }
 
   Future<void> _refreshRecords() async {
     final fresh = DatabaseHelper.instance.getLatestPerChicken();
+
     setState(() {
       _recordsFuture = fresh;
     });
+
     await fresh;
   }
 
@@ -86,19 +100,23 @@ class _HomeScreenState extends State<HomeScreen>
     final regex = RegExp(
       r'^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$',
     );
+
     return regex.hasMatch(ip.trim());
   }
 
   String _formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
+
     final mm = minutes.toString().padLeft(2, '0');
     final ss = seconds.toString().padLeft(2, '0');
+
     return '$mm:$ss';
   }
 
   void _showSnack(String message) {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -177,6 +195,97 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  void _showProcessingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Column(
+            children: [
+              Icon(
+                Icons.analytics_rounded,
+                color: Color(0xFF2E7D32),
+                size: 38,
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Processing Analysis',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Please wait while BFPAS analyzes the recording.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+          content: ValueListenableBuilder<int>(
+            valueListenable: _processStep,
+            builder: (context, step, _) {
+              return ValueListenableBuilder<double>(
+                valueListenable: _processPercent,
+                builder: (context, percent, _) {
+                  return ProcessProgressTimeline(
+                    currentStep: step,
+                    percent: percent,
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _runProcessingProgressFromPi() async {
+    final conn = context.read<ConnectionService>();
+
+    while (mounted) {
+      final status = await conn.fetchInferenceStatus();
+
+      final phase = status['phase']?.toString() ?? 'idle';
+      final elapsed = status['elapsed_sec'] ?? 0;
+      final duration = status['duration_sec'] ?? 1;
+
+      if (phase == 'recording') {
+        _processStep.value = 0;
+        _processPercent.value = duration > 0 ? elapsed / duration : 0.0;
+      } else if (phase == 'processing_video') {
+        _processStep.value = 1;
+        _processPercent.value = 0.35;
+      } else if (phase == 'extracting_features') {
+        _processStep.value = 2;
+        _processPercent.value = 0.65;
+      } else if (phase == 'svm_prediction') {
+        _processStep.value = 3;
+        _processPercent.value = 0.85;
+      } else if (phase == 'done') {
+        _processStep.value = 4;
+        _processPercent.value = 1.0;
+        break;
+      } else if (phase == 'error') {
+        throw Exception(status['error'] ?? 'Inference error');
+      }
+
+      await Future.delayed(const Duration(seconds: 1));
+    }
+  }
+
   void _startRecordingUi(int durationSeconds) {
     _recordingTimer?.cancel();
     _recordingSecondsLeft.value = durationSeconds;
@@ -187,14 +296,17 @@ class _HomeScreenState extends State<HomeScreen>
 
     _recordingController.repeat(reverse: true);
 
-    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (_recordingSecondsLeft.value > 0) {
-        _recordingSecondsLeft.value--;
-      } else {
-        timer.cancel();
-        await _finishRecordingSession();
-      }
-    });
+    _recordingTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) async {
+        if (_recordingSecondsLeft.value > 0) {
+          _recordingSecondsLeft.value--;
+        } else {
+          timer.cancel();
+          await _finishRecordingSession();
+        }
+      },
+    );
   }
 
   void _stopRecordingUi() {
@@ -211,7 +323,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _saveLatestPiDataToDatabase() async {
     final conn = context.read<ConnectionService>();
+
     await conn.waitForInferenceToFinish();
+
     final records = await conn.fetchChickenData();
 
     for (final record in records) {
@@ -231,12 +345,27 @@ class _HomeScreenState extends State<HomeScreen>
       _recordingDialogContext = null;
     }
 
+    if (!mounted) return;
+
+    _processStep.value = 0;
+    _processPercent.value = 0.0;
+
+    _showProcessingDialog();
+
     try {
+      await _runProcessingProgressFromPi();
       await _saveLatestPiDataToDatabase();
+
       if (!mounted) return;
+
+      Navigator.of(context).pop();
       _showResultDialog();
     } catch (e) {
-      _showSnack('Inference finished, but failed to load/save results: $e');
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      _showSnack('Inference failed: $e');
     }
   }
 
@@ -247,6 +376,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     final conn = context.read<ConnectionService>();
+
     if (!conn.isConnected) {
       _showSnack('Raspberry Pi is not connected. Check IP and try again.');
       return;
@@ -262,6 +392,7 @@ class _HomeScreenState extends State<HomeScreen>
     _startRecordingUi(_analysisDurationSeconds);
 
     if (!mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -474,39 +605,37 @@ class _HomeScreenState extends State<HomeScreen>
             Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: ['View All', 'Normal', 'Anomaly']
-                    .map(
-                      (label) {
-                        final isSelected = _selectedFilter == label;
-                        final color = label == 'Anomaly'
-                            ? Colors.red
-                            : const Color(0xFF2E7D32);
+                children: ['View All', 'Normal', 'Anomaly'].map(
+                  (label) {
+                    final isSelected = _selectedFilter == label;
+                    final color = label == 'Anomaly'
+                        ? Colors.red
+                        : const Color(0xFF2E7D32);
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: FilterChip(
-                            label: Text(label),
-                            selected: isSelected,
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedFilter = label;
-                              });
-                            },
-                            selectedColor: color.withOpacity(0.2),
-                            checkmarkColor: color,
-                            labelStyle: TextStyle(
-                              color: isSelected ? color : Colors.black54,
-                              fontWeight:
-                                  isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                            side: BorderSide(
-                              color: isSelected ? color : Colors.black26,
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                    .toList(),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: FilterChip(
+                        label: Text(label),
+                        selected: isSelected,
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedFilter = label;
+                          });
+                        },
+                        selectedColor: color.withOpacity(0.2),
+                        checkmarkColor: color,
+                        labelStyle: TextStyle(
+                          color: isSelected ? color : Colors.black54,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                        side: BorderSide(
+                          color: isSelected ? color : Colors.black26,
+                        ),
+                      ),
+                    );
+                  },
+                ).toList(),
               ),
             ),
             const SizedBox(height: 20),
