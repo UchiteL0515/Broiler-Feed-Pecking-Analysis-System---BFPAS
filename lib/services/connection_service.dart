@@ -105,16 +105,27 @@ class ConnectionService extends ChangeNotifier {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  Future<void> waitForInferenceToFinish({int maxExtraWaitSec = 30}) async {
-    final deadline = DateTime.now().add(Duration(seconds: maxExtraWaitSec));
+  Future<void> waitForInferenceToFinish({int maxExtraWaitSec = 3600}) async {
+  final deadline = DateTime.now().add(Duration(seconds: maxExtraWaitSec));
 
-    while (DateTime.now().isBefore(deadline)) {
-      final status = await getInferenceStatus();
-      final running = status['running'] == true;
-      if (!running) return;
-      await Future.delayed(const Duration(seconds: 1));
+  while (DateTime.now().isBefore(deadline)) {
+    final status = await getInferenceStatus();
+
+    final done = status['done'] == true;
+    final error = status['error'];
+
+    if (done) {
+      if (error != null && error.toString().isNotEmpty) {
+        throw Exception('Inference error: $error');
+      }
+      return;
     }
+
+    await Future.delayed(const Duration(seconds: 1));
   }
+
+  throw Exception('Timed out waiting for inference finalization.');
+}
 
   Future<List<ChickenRecord>> fetchChickenData() async {
     final response = await http

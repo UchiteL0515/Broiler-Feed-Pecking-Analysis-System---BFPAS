@@ -20,7 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  static const int _analysisDurationSeconds = 10; // change to 600 for 10 minutes
+  static const int _analysisDurationSeconds = 60; // change to 600 for 10 minutes
 
   String _selectedFilter = 'View All';
   late Future<List<ChickenRecord>> _recordsFuture;

@@ -73,19 +73,20 @@ class DatabaseHelper{
   Future<List<ChickenRecord>> getLatestPerChicken() async{
     final db = await database;
     final rows = await db.rawQuery('''
-      SELECT t.*
-      FROM  t
-      INNER JOIN (
-        SELECT chicken_id, MAX(timestamp) AS latest_timestamp
-        FROM 
-        GROUP BY chicken_id
-      ) latest
-      ON t.chicken_id = latest.chicken_id
-      AND t.timestamp = latest.latest_timestamp
-      ORDER BY t.chicken_id ASC
-    ''');
-    return rows.map(ChickenRecord.fromMap).toList();
-  }
+    SELECT t.*
+    FROM $table t
+    INNER JOIN (
+      SELECT chicken_id, MAX(timestamp) AS latest_timestamp
+      FROM $table
+      GROUP BY chicken_id
+    ) latest
+    ON t.chicken_id = latest.chicken_id
+    AND t.timestamp = latest.latest_timestamp
+    ORDER BY t.chicken_id ASC
+  ''');
+
+  return rows.map(ChickenRecord.fromMap).toList();
+}
 
   // Optional helper if you want only one saved row per chicken.
   // Do not use this if you want full session history.
