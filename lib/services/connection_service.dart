@@ -105,7 +105,7 @@ class ConnectionService extends ChangeNotifier {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  Future<void> waitForInferenceToFinish({int maxExtraWaitSec = 3600}) async {
+  Future<void> waitForInferenceToFinish({int maxExtraWaitSec = 10800}) async {
   final deadline = DateTime.now().add(Duration(seconds: maxExtraWaitSec));
 
   while (DateTime.now().isBefore(deadline)) {
