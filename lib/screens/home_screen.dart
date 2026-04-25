@@ -22,7 +22,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  static const int _analysisDurationSeconds = 10;
+  static const int _analysisDurationSeconds = 600;
 
   String _selectedFilter = 'View All';
   late Future<List<ChickenRecord>> _recordsFuture;
