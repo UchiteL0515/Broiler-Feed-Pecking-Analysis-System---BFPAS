@@ -2,17 +2,21 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/chicken_record.dart';
 
 enum ConnectionStatus { disconnected, connecting, connected, failed }
 
 class ConnectionService extends ChangeNotifier {
-  static String piAddress = '192.168.1.23'; // Pi IP for connection
+  static String piAddress = '192.168.1.23'; // default
   static const int _port = 5000;
   static const int _timeout = 5;
   static const int _heartbeat = 10;
   static const int _retry = 5;
+
+  // 🔥 NEW: storage key
+  static const String _ipKey = 'raspi_ip';
 
   ConnectionStatus _piStatus = ConnectionStatus.disconnected;
   String _errorMessage = '';
@@ -28,7 +32,24 @@ class ConnectionService extends ChangeNotifier {
     piAddress = value;
   }
 
-  void init() => _attemptConnection();
+  // 🔥 NEW: SAVE IP
+  static Future<void> savePiAddress(String ip) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_ipKey, ip);
+    piAddress = ip;
+  }
+
+  // 🔥 NEW: LOAD IP
+  static Future<void> loadPiAddress() async {
+    final prefs = await SharedPreferences.getInstance();
+    piAddress = prefs.getString(_ipKey) ?? piAddress;
+  }
+
+  // 🔥 MODIFIED: INIT
+  Future<void> init() async {
+    await loadPiAddress(); // load saved IP first
+    await _attemptConnection();
+  }
 
   Future<void> reconnect() async {
     _heartbeatTimer?.cancel();
@@ -106,26 +127,26 @@ class ConnectionService extends ChangeNotifier {
   }
 
   Future<void> waitForInferenceToFinish({int maxExtraWaitSec = 10800}) async {
-  final deadline = DateTime.now().add(Duration(seconds: maxExtraWaitSec));
+    final deadline = DateTime.now().add(Duration(seconds: maxExtraWaitSec));
 
-  while (DateTime.now().isBefore(deadline)) {
-    final status = await getInferenceStatus();
+    while (DateTime.now().isBefore(deadline)) {
+      final status = await getInferenceStatus();
 
-    final done = status['done'] == true;
-    final error = status['error'];
+      final done = status['done'] == true;
+      final error = status['error'];
 
-    if (done) {
-      if (error != null && error.toString().isNotEmpty) {
-        throw Exception('Inference error: $error');
+      if (done) {
+        if (error != null && error.toString().isNotEmpty) {
+          throw Exception('Inference error: $error');
+        }
+        return;
       }
-      return;
+
+      await Future.delayed(const Duration(seconds: 1));
     }
 
-    await Future.delayed(const Duration(seconds: 1));
+    throw Exception('Timed out waiting for inference finalization.');
   }
-
-  throw Exception('Timed out waiting for inference finalization.');
-}
 
   Future<List<ChickenRecord>> fetchChickenData() async {
     final response = await http
@@ -145,11 +166,11 @@ class ConnectionService extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> fetchInferenceStatus() async {
-    final url = Uri.parse('http://$piAddress:5000/inference/status');
+    final url = Uri.parse('$baseUrl/inference/status');
 
     final response = await http.get(url).timeout(
-      const Duration(seconds: 5),
-    );
+          const Duration(seconds: 5),
+        );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch inference status');

@@ -46,6 +46,8 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
 
+    _loadSavedIp();
+
     _recordsFuture = DatabaseHelper.instance.getLatestPerChicken();
 
     _recordingController = AnimationController(
@@ -62,6 +64,16 @@ class _HomeScreenState extends State<HomeScreen>
         curve: Curves.easeInOut,
       ),
     );
+  }
+
+  Future<void> _loadSavedIp() async {
+    await ConnectionService.loadPiAddress();
+
+    if (!mounted) return;
+
+    setState(() {
+      _currentIp = ConnectionService.piAddress;
+    });
   }
 
   @override
@@ -165,10 +177,13 @@ class _HomeScreenState extends State<HomeScreen>
                   return;
                 }
 
+                await ConnectionService.savePiAddress(newIp);
+
                 setState(() {
-                  ConnectionService.piAddress = newIp;
                   _currentIp = newIp;
                 });
+
+                if (!mounted) return;
 
                 Navigator.pop(dialogContext);
                 await context.read<ConnectionService>().reconnect();
@@ -428,94 +443,102 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7F5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1B5E20),
-        foregroundColor: Colors.white,
-        elevation: 1,
-        centerTitle: false,
-        titleSpacing: 10,
-        toolbarHeight: 72,
-        title: Row(
-          children: [
-            ClipOval(
-              child: Image.asset(
-                'assets/images/app1.png',
-                height: 44,
-                width: 44,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Broiler Feed-Pecking Analysis System',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  Text(
-                    'BFPAS',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            FutureBuilder<List<ChickenRecord>>(
-              future: _recordsFuture,
-              builder: (context, snapshot) {
-                final data = snapshot.data ?? [];
-                final total = data.length;
-                final normal = data.where((e) => e.status == 'Normal').length;
-                final anomaly = data.where((e) => e.status == 'Anomaly').length;
+    return Consumer<ConnectionService>(
+      builder: (context, conn, _) {
+        final displayedIp = ConnectionService.piAddress;
 
-                return Row(
-                  children: [
-                    StatCard(
-                      label: 'Total',
-                      value: total.toString(),
-                      color: Colors.blueGrey,
-                    ),
-                    const SizedBox(width: 10),
-                    StatCard(
-                      label: 'Normal',
-                      value: normal.toString(),
-                      color: const Color(0xFF2E7D32),
-                    ),
-                    const SizedBox(width: 10),
-                    StatCard(
-                      label: 'Anomaly',
-                      value: anomaly.toString(),
-                      color: Colors.red,
-                    ),
-                  ],
-                );
-              },
+        if (_currentIp != displayedIp) {
+          _currentIp = displayedIp;
+        }
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF5F7F5),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF1B5E20),
+            foregroundColor: Colors.white,
+            elevation: 1,
+            centerTitle: false,
+            titleSpacing: 10,
+            toolbarHeight: 72,
+            title: Row(
+              children: [
+                ClipOval(
+                  child: Image.asset(
+                    'assets/images/app1.png',
+                    height: 44,
+                    width: 44,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Broiler Feed-Pecking Analysis System',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        'BFPAS',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
-            Consumer<ConnectionService>(
-              builder: (context, conn, _) {
-                return Column(
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FutureBuilder<List<ChickenRecord>>(
+                  future: _recordsFuture,
+                  builder: (context, snapshot) {
+                    final data = snapshot.data ?? [];
+                    final total = data.length;
+                    final normal =
+                        data.where((e) => e.status == 'Normal').length;
+                    final anomaly =
+                        data.where((e) => e.status == 'Anomaly').length;
+
+                    return Row(
+                      children: [
+                        StatCard(
+                          label: 'Total',
+                          value: total.toString(),
+                          color: Colors.blueGrey,
+                        ),
+                        const SizedBox(width: 10),
+                        StatCard(
+                          label: 'Normal',
+                          value: normal.toString(),
+                          color: const Color(0xFF2E7D32),
+                        ),
+                        const SizedBox(width: 10),
+                        StatCard(
+                          label: 'Anomaly',
+                          value: anomaly.toString(),
+                          color: Colors.red,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 18),
+                Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Row(
@@ -574,7 +597,7 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'IP: $_currentIp',
+                      'IP: $displayedIp',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 12,
@@ -596,124 +619,127 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ],
                   ],
-                );
-              },
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: ['View All', 'Normal', 'Anomaly'].map(
-                  (label) {
-                    final isSelected = _selectedFilter == label;
-                    final color = label == 'Anomaly'
-                        ? Colors.red
-                        : const Color(0xFF2E7D32);
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: ['View All', 'Normal', 'Anomaly'].map(
+                      (label) {
+                        final isSelected = _selectedFilter == label;
+                        final color = label == 'Anomaly'
+                            ? Colors.red
+                            : const Color(0xFF2E7D32);
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: FilterChip(
-                        label: Text(label),
-                        selected: isSelected,
-                        onSelected: (_) {
-                          setState(() {
-                            _selectedFilter = label;
-                          });
-                        },
-                        selectedColor: color.withOpacity(0.2),
-                        checkmarkColor: color,
-                        labelStyle: TextStyle(
-                          color: isSelected ? color : Colors.black54,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        side: BorderSide(
-                          color: isSelected ? color : Colors.black26,
-                        ),
-                      ),
-                    );
-                  },
-                ).toList(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _refreshRecords,
-                child: FutureBuilder<List<ChickenRecord>>(
-                  future: _recordsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 150),
-                          Center(child: CircularProgressIndicator()),
-                        ],
-                      );
-                    }
-
-                    if (snapshot.hasError) {
-                      return ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 150),
-                          Center(child: Text('Error loading records')),
-                        ],
-                      );
-                    }
-
-                    final data = snapshot.data ?? [];
-                    final filtered = _applyFilter(data);
-
-                    if (filtered.isEmpty) {
-                      return ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          const SizedBox(height: 150),
-                          Center(
-                            child: Text(
-                              _selectedFilter == 'View All'
-                                  ? 'No chicken analysis records yet.'
-                                  : 'No $_selectedFilter results yet.',
-                              style: const TextStyle(color: Colors.black45),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: FilterChip(
+                            label: Text(label),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedFilter = label;
+                              });
+                            },
+                            selectedColor: color.withOpacity(0.2),
+                            checkmarkColor: color,
+                            labelStyle: TextStyle(
+                              color: isSelected ? color : Colors.black54,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            side: BorderSide(
+                              color: isSelected ? color : Colors.black26,
                             ),
                           ),
-                        ],
-                      );
-                    }
-
-                    return GridView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.95,
-                      ),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final record = filtered[index];
-                        return ChickenCard(record: record);
+                        );
                       },
-                    );
-                  },
+                    ).toList(),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _refreshRecords,
+                    child: FutureBuilder<List<ChickenRecord>>(
+                      future: _recordsFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: const [
+                              SizedBox(height: 150),
+                              Center(child: CircularProgressIndicator()),
+                            ],
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: const [
+                              SizedBox(height: 150),
+                              Center(child: Text('Error loading records')),
+                            ],
+                          );
+                        }
+
+                        final data = snapshot.data ?? [];
+                        final filtered = _applyFilter(data);
+
+                        if (filtered.isEmpty) {
+                          return ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              const SizedBox(height: 150),
+                              Center(
+                                child: Text(
+                                  _selectedFilter == 'View All'
+                                      ? 'No chicken analysis records yet.'
+                                      : 'No $_selectedFilter results yet.',
+                                  style:
+                                      const TextStyle(color: Colors.black45),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.95,
+                          ),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final record = filtered[index];
+                            return ChickenCard(record: record);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openHistory,
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-        mini: true,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.menu),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _openHistory,
+            backgroundColor: const Color(0xFF2E7D32),
+            foregroundColor: Colors.white,
+            mini: true,
+            shape: const CircleBorder(),
+            child: const Icon(Icons.menu),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        );
+      },
     );
   }
 }

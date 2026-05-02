@@ -42,6 +42,10 @@ class _IpConfigurationScreenState extends State<IpConfigurationScreen> {
     final conn = context.read<ConnectionService>();
     await conn.reconnect();
 
+    if (conn.isConnected) {
+    await ConnectionService.savePiAddress(ip);
+    }
+    
     if (!mounted) return;
 
     setState(() {
