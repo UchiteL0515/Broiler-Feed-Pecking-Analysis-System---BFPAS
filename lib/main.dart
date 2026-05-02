@@ -41,7 +41,7 @@ class BFPASApp extends StatelessWidget {
       home: const AnimatedSplashScreen(),
       routes: {
         '/home': (context) => const HomeScreen(),
-        '/onboard': (context) => AboutAppScreen(),
+        '/onboard': (context) => const AboutAppScreen(),
       },
     );
   }
