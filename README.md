@@ -69,6 +69,4 @@ lib/
 - ✅ SQLite schema + `sqflite` setup
 - ✅ Chicken card grid with ID + Normal/Anomaly badge
 - ✅ Chicken detail view with live feed + behavioral data
-
-# Next Steps
-- [ ] YOLOv8 + DeepSORT + SVM -- training and deployment
+- ✅ YOLOv8 + DeepSORT + SVM -- training and deployment
