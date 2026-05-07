@@ -43,19 +43,32 @@ Demo data should start to seed inside database, wait until finished then a print
 # Project Structure
 ```
 lib/
-├── main.dart                        # App entry point + theme
+├── main.dart                            # App entry point + theme
 ├── screens/
-│   └── home_screen.dart             # Main homepage (status + chicken grid)
+│   └── onboard/                         # These are for the onboarding screen disply
+│       └── about_app_screen.dart
+│       └── camera_setup_screen.dart
+│       └── ip_configuration_screen.dart
+│   └── animated_splash_screen.dart      # Animated logo from when you open the app
+│   └── chicken_detail_screen.dart       # The data and live feed screen entry
+│   └── home_screen.dart                 # Main homepage (status + chicken grid)
 ├── services/
-│   └── connection_service.dart      # Pi connection state (Wi-Fi)
+│   └── connection_service.dart          # Pi connection state (Wi-Fi)
 ├── widgets/
-│   └── connection_status_badge.dart # Reusable connected/disconnected badge
-│   └── mjpeg_viewer.dart            # Used for the live feed stream
+│   └── connection_status_badge.dart     # Reusable connected/disconnected badge
+│   └── mjpeg_viewer.dart                # Used for the live feed stream
+│   └── chicken_card.dart                # Each chicken card
+│   └── history.dart                     # Inference history
+│   └── onboarding_bottom.dart           # First start screen
+│   └── process_progress_timeline.dart   # During video processing display
+│   └── recording_dialog.dart            # Recording display
+│   └── result_dialog.dart               # After recording - processing display
+│   └── stat_card.dart                   # Stats card in the home screen
 ├── models/
-│   └── chicken_record.dart          # Database model mapping for SQLite records
+│   └── chicken_record.dart              # Database model mapping for SQLite records
 └── database/
-    └── database_helper.dart         # Helper functions for Database Management
-    └── database_seeder.dart         # Seed Demo Data
+    └── database_helper.dart             # Helper functions for Database Management
+    └── database_seeder.dart             # Seed Demo Data
 ```
 
 # Current Application Features
